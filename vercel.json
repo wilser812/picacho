@@ -1,5 +1,8 @@
 {
   "installCommand": "pnpm install",
   "buildCommand": "pnpm --filter shared build && pnpm --filter web build",
-  "outputDirectory": "apps/web/.next"
+  "outputDirectory": "apps/web/.next",
+  "env": {
+    "NEXT_PUBLIC_API_URL": "https://payroll-skies-escapade.ngrok-free.dev"
+  }
 }
