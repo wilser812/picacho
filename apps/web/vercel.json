@@ -1,7 +1,0 @@
-{
-  "installCommand": "cd ../.. && pnpm install",
-  "buildCommand": "cd ../.. && pnpm --filter shared build && pnpm --filter web build",
-  "env": {
-    "NEXT_PUBLIC_API_URL": "https://payroll-skies-escapade.ngrok-free.dev"
-  }
-}
