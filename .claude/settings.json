@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -v)",
+      "Bash(node --version)",
+      "Bash(npm -v)",
+      "Bash(npm --version)",
+      "Bash(pnpm -v)",
+      "Bash(pnpm --version)",
+      "Bash(pnpm config get *)",
+      "Bash(pnpm config list)",
+      "Bash(git --version)",
+      "Bash(git status *)",
+      "Bash(git log *)",
+      "Bash(git diff *)",
+      "Bash(git show *)",
+      "Bash(git branch *)",
+      "Bash(docker --version)",
+      "Bash(docker compose version)",
+      "Bash(docker ps *)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx tsc --noEmit *)"
+    ]
+  }
+}

@@ -1,0 +1,154 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pg_trgm]
+}
+
+enum UserRole {
+  BUYER
+  VENDOR
+  DRIVER
+  ADMIN
+}
+
+enum ProductUnit {
+  KG
+  UNIT
+  LITER
+}
+
+enum OrderStatus {
+  RECEIVED
+  PREPARING
+  ON_THE_WAY
+  DELIVERED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         UserRole @default(BUYER)
+  pushToken    String?
+  createdAt    DateTime @default(now())
+
+  vendor Vendor?
+  driver Driver?
+  orders Order[] @relation("BuyerOrders")
+}
+
+model Vendor {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String   @unique
+  storeName   String
+  isApproved  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  products Product[]
+  orders   Order[]
+}
+
+model Category {
+  id       String     @id @default(cuid())
+  slug     String     @unique
+  name     String
+  icon     String?
+  parent   Category?  @relation("CategoryToSubcategory", fields: [parentId], references: [id])
+  parentId String?
+  children Category[] @relation("CategoryToSubcategory")
+  products Product[]
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  price       Decimal     @db.Decimal(10, 2)
+  unit        ProductUnit @default(UNIT)
+  isEssential Boolean     @default(false)
+  imageUrl    String?
+  createdAt   DateTime    @default(now())
+
+  vendor     Vendor     @relation(fields: [vendorId], references: [id])
+  vendorId   String
+  category   Category   @relation(fields: [categoryId], references: [id])
+  categoryId String
+  orderItems OrderItem[]
+
+  @@index([categoryId])
+  @@index([price])
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin)
+}
+
+model Driver {
+  id           String   @id @default(cuid())
+  user         User     @relation(fields: [userId], references: [id])
+  userId       String   @unique
+  phone        String
+  vehiclePlate String
+  vehicleType  String
+  isAvailable  Boolean  @default(true)
+
+  orders    Order[]
+  locations DriverLocation[]
+}
+
+model DriverLocation {
+  id        String   @id @default(cuid())
+  driver    Driver   @relation(fields: [driverId], references: [id])
+  driverId  String
+  lat       Float
+  lng       Float
+  updatedAt DateTime @default(now())
+
+  @@index([driverId, updatedAt])
+}
+
+model Order {
+  id        String      @id @default(cuid())
+  buyer     User        @relation("BuyerOrders", fields: [buyerId], references: [id])
+  buyerId   String
+  vendor    Vendor      @relation(fields: [vendorId], references: [id])
+  vendorId  String
+  driver    Driver?     @relation(fields: [driverId], references: [id])
+  driverId  String?
+  status    OrderStatus @default(RECEIVED)
+  total     Decimal     @db.Decimal(10, 2)
+  createdAt DateTime    @default(now())
+
+  items   OrderItem[]
+  payment Payment?
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  order     Order   @relation(fields: [orderId], references: [id])
+  orderId   String
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+  quantity  Decimal @db.Decimal(10, 2)
+  unitPrice Decimal @db.Decimal(10, 2)
+}
+
+model Payment {
+  id                String   @id @default(cuid())
+  order             Order    @relation(fields: [orderId], references: [id])
+  orderId           String   @unique
+  provider          String   @default("mercadopago")
+  providerPaymentId String?
+  status            String   @default("pending")
+  createdAt         DateTime @default(now())
+}
+
+// Fila única (id fijo "singleton") con configuración global de la plataforma.
+model PlatformSettings {
+  id             String  @id @default("singleton")
+  commissionRate Decimal @default(0.10) @db.Decimal(5, 4)
+}
