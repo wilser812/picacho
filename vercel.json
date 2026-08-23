@@ -1,8 +1,5 @@
 {
   "installCommand": "pnpm install",
   "buildCommand": "pnpm --filter shared build && pnpm --filter web build",
-  "outputDirectory": "apps/web/.next",
-  "env": {
-    "NEXT_PUBLIC_API_URL": "https://picacho-wilser.vercel.app"
-  }
+  "outputDirectory": "apps/web/.next"
 }
