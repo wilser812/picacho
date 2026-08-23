@@ -1,5 +1,8 @@
 {
   "installCommand": "pnpm install",
-  "buildCommand": "pnpm --filter api run prisma:generate && pnpm --filter shared build && pnpm --filter api build",
-  "outputDirectory": "apps/api/dist"
+  "buildCommand": "pnpm --filter shared build && pnpm --filter web build",
+  "outputDirectory": "apps/web/.next",
+  "env": {
+    "NEXT_PUBLIC_API_URL": "https://picacho-wilser.vercel.app"
+  }
 }
