@@ -1,5 +1,5 @@
 {
   "installCommand": "pnpm install",
-  "buildCommand": "pnpm --filter shared build && pnpm --filter api build",
+  "buildCommand": "pnpm --filter api run prisma:generate && pnpm --filter shared build && pnpm --filter api build",
   "outputDirectory": "apps/api/dist"
 }
