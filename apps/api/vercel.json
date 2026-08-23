@@ -1,0 +1,8 @@
+{
+  "installCommand": "cd ../../ && pnpm install",
+  "buildCommand": "pnpm --filter shared build && pnpm --filter api build",
+  "outputDirectory": "dist",
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
