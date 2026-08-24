@@ -6,10 +6,11 @@ import { api, TOKEN_STORAGE_KEY, type ApiUser } from "@/lib/api";
 interface AuthContextValue {
   user: ApiUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<ApiUser>;
   register: (name: string, email: string, password: string) => Promise<void>;
   becomeVendor: (storeName: string) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -45,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     localStorage.setItem(TOKEN_STORAGE_KEY, res.accessToken);
     setUser(res.user);
+    return res.user;
   }
 
   async function register(name: string, email: string, password: string) {
@@ -71,7 +73,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, becomeVendor, logout }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, register, becomeVendor, logout, refreshUser: loadUser }}
+    >
       {children}
     </AuthContext.Provider>
   );

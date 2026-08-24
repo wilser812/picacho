@@ -41,6 +41,14 @@ export class DriverService {
     return this.requireDriver(userId);
   }
 
+  async updateDriver(userId: string, dto: { phone?: string; vehiclePlate?: string; vehicleType?: string }) {
+    const driver = await this.requireDriver(userId);
+    return this.prisma.driver.update({
+      where: { id: driver.id },
+      data: { phone: dto.phone, vehiclePlate: dto.vehiclePlate, vehicleType: dto.vehicleType },
+    });
+  }
+
   async listAvailableOrders() {
     return this.prisma.order.findMany({
       where: { status: "PREPARING", driverId: null },

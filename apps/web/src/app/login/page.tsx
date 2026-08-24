@@ -18,8 +18,16 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      await login(email, password);
-      router.push("/");
+      const loggedInUser = await login(email, password);
+      const destination =
+        loggedInUser.role === "ADMIN"
+          ? "/admin"
+          : loggedInUser.role === "VENDOR"
+            ? "/vendor"
+            : loggedInUser.role === "DRIVER"
+              ? "/driver"
+              : "/";
+      router.push(destination);
     } catch {
       setError("Correo o contraseña inválidos.");
     } finally {

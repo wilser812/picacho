@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../prisma/prisma.service";
 import { MercadoPagoProvider } from "./providers/mercadopago.provider";
 import { MockPaymentProvider } from "./providers/mock.provider";
+import { InvoicingService } from "../invoicing/invoicing.service";
 
 @Injectable()
 export class PaymentsService {
@@ -11,6 +12,7 @@ export class PaymentsService {
     private config: ConfigService,
     private mercadoPago: MercadoPagoProvider,
     private mock: MockPaymentProvider,
+    private invoicing: InvoicingService,
   ) {}
 
   private get usingMercadoPago() {
@@ -57,6 +59,10 @@ export class PaymentsService {
       data: { status: info.status, providerPaymentId: paymentId },
     });
 
+    if (info.status === "approved") {
+      await this.invoicing.issueForOrder(info.externalReference);
+    }
+
     return { received: true };
   }
 
@@ -66,6 +72,8 @@ export class PaymentsService {
       update: { status: "approved" },
       create: { orderId, provider: "mock", status: "approved", providerPaymentId: `mock-${orderId}` },
     });
+
+    await this.invoicing.issueForOrder(orderId);
 
     const webUrl = this.config.get<string>("WEB_URL", "http://localhost:3000");
     return `<!doctype html>

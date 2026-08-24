@@ -44,11 +44,41 @@ export class AdminService {
       include: {
         buyer: { select: { name: true, email: true } },
         vendor: { select: { storeName: true } },
-        driver: { select: { user: { select: { name: true } } } },
+        driver: { select: { id: true, user: { select: { name: true } } } },
         payment: true,
         items: true,
       },
       orderBy: { createdAt: "desc" },
+    });
+  }
+
+  listDrivers() {
+    return this.prisma.driver.findMany({
+      include: { user: { select: { name: true, email: true } } },
+      orderBy: { user: { name: "asc" } },
+    });
+  }
+
+  async assignDriver(orderId: string, driverId: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException("Pedido no encontrado");
+    if (order.status === "DELIVERED") {
+      throw new ConflictException("No se puede reasignar un pedido ya entregado");
+    }
+
+    const driver = await this.prisma.driver.findUnique({ where: { id: driverId } });
+    if (!driver) throw new NotFoundException("Repartidor no encontrado");
+
+    return this.prisma.order.update({
+      where: { id: orderId },
+      data: { driverId },
+      include: {
+        buyer: { select: { name: true, email: true } },
+        vendor: { select: { storeName: true } },
+        driver: { select: { id: true, user: { select: { name: true } } } },
+        payment: true,
+        items: true,
+      },
     });
   }
 

@@ -8,6 +8,7 @@ import { TrackingModule } from "./tracking/tracking.module";
 import { ProductsModule } from "./products/products.module";
 import { OrdersModule } from "./orders/orders.module";
 import { PaymentsModule } from "./payments/payments.module";
+import { InvoicingModule } from "./invoicing/invoicing.module";
 import { VendorModule } from "./vendor/vendor.module";
 import { DriverModule } from "./driver/driver.module";
 import { AdminModule } from "./admin/admin.module";
@@ -23,6 +24,7 @@ import { NotificationsModule } from "./notifications/notifications.module";
     ProductsModule,
     OrdersModule,
     PaymentsModule,
+    InvoicingModule,
     VendorModule,
     DriverModule,
     AdminModule,

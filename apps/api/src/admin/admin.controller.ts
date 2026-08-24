@@ -5,6 +5,7 @@ import { Roles } from "../auth/roles.decorator";
 import { AdminService } from "./admin.service";
 import { UpdateVendorApprovalDto } from "./dto/update-vendor-approval.dto";
 import { UpdateSettingsDto } from "./dto/update-settings.dto";
+import { AssignDriverDto } from "./dto/assign-driver.dto";
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles("ADMIN")
@@ -35,6 +36,16 @@ export class AdminController {
   @Get("orders")
   listOrders() {
     return this.admin.listOrders();
+  }
+
+  @Get("drivers")
+  listDrivers() {
+    return this.admin.listDrivers();
+  }
+
+  @Patch("orders/:id/assign-driver")
+  assignDriver(@Param("id") id: string, @Body() dto: AssignDriverDto) {
+    return this.admin.assignDriver(id, dto.driverId);
   }
 
   @Get("users")

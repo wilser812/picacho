@@ -16,6 +16,7 @@ const ORDER_INCLUDE = {
     },
   },
   payment: true,
+  invoice: true,
 } satisfies Prisma.OrderInclude;
 
 @Injectable()

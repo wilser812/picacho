@@ -79,6 +79,17 @@ export default function OrderDetailPage() {
             Pago: {order.payment.status === "approved" ? "aprobado" : order.payment.status}
           </span>
         )}
+        {order.invoice?.pdfUrl && (
+          <a
+            href={order.invoice.pdfUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-full bg-foreground/10 px-3 py-1 text-sm font-semibold text-foreground hover:bg-foreground/20"
+          >
+            Ver {order.invoice.docType === "FACTURA" ? "factura" : "boleta"} {order.invoice.series}-
+            {String(order.invoice.correlative).padStart(6, "0")}
+          </a>
+        )}
       </div>
 
       {order.driver && (

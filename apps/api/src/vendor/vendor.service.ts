@@ -30,6 +30,11 @@ export class VendorService {
     return this.requireVendor(userId);
   }
 
+  async updateVendor(userId: string, dto: { storeName?: string }) {
+    const vendor = await this.requireVendor(userId);
+    return this.prisma.vendor.update({ where: { id: vendor.id }, data: { storeName: dto.storeName } });
+  }
+
   private async requireVendor(userId: string) {
     const vendor = await this.prisma.vendor.findUnique({ where: { userId } });
     if (!vendor) throw new NotFoundException("No tienes una tienda registrada");

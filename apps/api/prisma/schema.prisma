@@ -29,6 +29,17 @@ enum OrderStatus {
   DELIVERED
 }
 
+enum InvoiceDocType {
+  BOLETA
+  FACTURA
+}
+
+enum InvoiceStatus {
+  PENDING
+  ISSUED
+  ERROR
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -125,6 +136,7 @@ model Order {
 
   items   OrderItem[]
   payment Payment?
+  invoice Invoice?
 }
 
 model OrderItem {
@@ -151,4 +163,33 @@ model Payment {
 model PlatformSettings {
   id             String  @id @default("singleton")
   commissionRate Decimal @default(0.10) @db.Decimal(5, 4)
+}
+
+// Comprobante de pago (boleta/factura). Picacho es el emisor único: los pedidos
+// de cualquier bodega se facturan bajo el RUC de la plataforma, no del vendedor.
+model Invoice {
+  id             String         @id @default(cuid())
+  order          Order          @relation(fields: [orderId], references: [id])
+  orderId        String         @unique
+  docType        InvoiceDocType @default(BOLETA)
+  series         String
+  correlative    Int
+  buyerDocType   String         @default("DNI")
+  buyerDocNumber String         @default("00000000")
+  buyerName      String
+  provider       String         @default("mock")
+  status         InvoiceStatus  @default(PENDING)
+  pdfUrl         String?
+  externalId     String?
+  createdAt      DateTime       @default(now())
+
+  @@unique([docType, series, correlative])
+}
+
+// Contador de correlativo por tipo de documento (serie fija por tipo en el MVP).
+// SUNAT exige numeración estrictamente secuencial por serie.
+model InvoiceCounter {
+  docType     InvoiceDocType @id
+  series      String
+  correlative Int            @default(0)
 }

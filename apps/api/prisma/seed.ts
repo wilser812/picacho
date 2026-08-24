@@ -234,6 +234,171 @@ async function main() {
     }
   }
 
+  // Usuarios demo adicionales (comprador, repartidor, segundo vendedor) para
+  // poder probar cada panel de la plataforma con datos reales sin registrarse a mano.
+  const buyerUser = await prisma.user.upsert({
+    where: { email: "comprador.demo@picacho.pe" },
+    update: {},
+    create: {
+      email: "comprador.demo@picacho.pe",
+      name: "Comprador Demo",
+      passwordHash: await bcrypt.hash("changeme123", 10),
+      role: "BUYER",
+    },
+  });
+
+  const driverUser = await prisma.user.upsert({
+    where: { email: "repartidor.demo@picacho.pe" },
+    update: {},
+    create: {
+      email: "repartidor.demo@picacho.pe",
+      name: "Repartidor Demo",
+      passwordHash: await bcrypt.hash("changeme123", 10),
+      role: "DRIVER",
+      driver: { create: { phone: "987654321", vehiclePlate: "ABC-123", vehicleType: "Moto" } },
+    },
+    include: { driver: true },
+  });
+  const driver = driverUser.driver ?? (await prisma.driver.findUniqueOrThrow({ where: { userId: driverUser.id } }));
+
+  const vendor2User = await prisma.user.upsert({
+    where: { email: "vendedor2.demo@picacho.pe" },
+    update: {},
+    create: {
+      email: "vendedor2.demo@picacho.pe",
+      name: "Verduras El Sol",
+      passwordHash: await bcrypt.hash("changeme123", 10),
+      role: "VENDOR",
+      vendor: { create: { storeName: "Verduras El Sol", isApproved: false } },
+    },
+    include: { vendor: true },
+  });
+  const vendor2 = vendor2User.vendor ?? (await prisma.vendor.findUniqueOrThrow({ where: { userId: vendor2User.id } }));
+
+  const verdurasCategory = await prisma.category.findUniqueOrThrow({ where: { slug: "verduras-hortalizas" } });
+  await prisma.product.upsert({
+    where: { id: "seed-vendor2-product-0" },
+    update: {},
+    create: {
+      id: "seed-vendor2-product-0",
+      name: "Zanahoria",
+      price: 2.5,
+      unit: "KG",
+      categoryId: verdurasCategory.id,
+      vendorId: vendor2.id,
+    },
+  });
+
+  // Pedidos de ejemplo, uno por cada estado del flujo, para que admin/vendedor/
+  // repartidor/comprador tengan algo que ver apenas inician sesión.
+  async function upsertOrder(params: {
+    id: string;
+    driverId?: string;
+    status: "RECEIVED" | "PREPARING" | "ON_THE_WAY" | "DELIVERED";
+    items: { productId: string; quantity: number; unitPrice: number }[];
+  }) {
+    const total = params.items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0);
+    return prisma.order.upsert({
+      where: { id: params.id },
+      update: { status: params.status, driverId: params.driverId },
+      create: {
+        id: params.id,
+        buyerId: buyerUser.id,
+        vendorId: vendor.id,
+        driverId: params.driverId,
+        status: params.status,
+        total,
+        items: {
+          create: params.items.map((i, idx) => ({
+            id: `${params.id}-item-${idx}`,
+            productId: i.productId,
+            quantity: i.quantity,
+            unitPrice: i.unitPrice,
+          })),
+        },
+      },
+    });
+  }
+
+  const orderReceived = await upsertOrder({
+    id: "seed-order-received",
+    status: "RECEIVED",
+    items: [
+      { productId: "seed-verduras-hortalizas-0", quantity: 3, unitPrice: 2.0 },
+      { productId: "seed-carnes-blancas-0", quantity: 1, unitPrice: 15.5 },
+    ],
+  });
+  await prisma.payment.upsert({
+    where: { orderId: orderReceived.id },
+    update: {},
+    create: { orderId: orderReceived.id, provider: "mock", status: "pending", providerPaymentId: `mock-${orderReceived.id}` },
+  });
+
+  const orderPreparing = await upsertOrder({
+    id: "seed-order-preparing",
+    status: "PREPARING",
+    items: [{ productId: "seed-pollo-frito-0", quantity: 2, unitPrice: 12.9 }],
+  });
+  await prisma.payment.upsert({
+    where: { orderId: orderPreparing.id },
+    update: {},
+    create: { orderId: orderPreparing.id, provider: "mock", status: "approved", providerPaymentId: `mock-${orderPreparing.id}` },
+  });
+
+  const orderOnTheWay = await upsertOrder({
+    id: "seed-order-ontheway",
+    driverId: driver.id,
+    status: "ON_THE_WAY",
+    items: [
+      { productId: "seed-detergentes-0", quantity: 1, unitPrice: 14.5 },
+      { productId: "seed-higiene-0", quantity: 2, unitPrice: 8.9 },
+    ],
+  });
+  await prisma.payment.upsert({
+    where: { orderId: orderOnTheWay.id },
+    update: {},
+    create: { orderId: orderOnTheWay.id, provider: "mock", status: "approved", providerPaymentId: `mock-${orderOnTheWay.id}` },
+  });
+
+  const orderDelivered = await upsertOrder({
+    id: "seed-order-delivered",
+    driverId: driver.id,
+    status: "DELIVERED",
+    items: [
+      { productId: "seed-verduras-hortalizas-1", quantity: 2, unitPrice: 2.3 },
+      { productId: "seed-carnes-blancas-0", quantity: 1, unitPrice: 15.5 },
+    ],
+  });
+  await prisma.payment.upsert({
+    where: { orderId: orderDelivered.id },
+    update: {},
+    create: { orderId: orderDelivered.id, provider: "mock", status: "approved", providerPaymentId: `mock-${orderDelivered.id}` },
+  });
+
+  const existingInvoice = await prisma.invoice.findUnique({ where: { orderId: orderDelivered.id } });
+  if (!existingInvoice) {
+    const counter = await prisma.invoiceCounter.upsert({
+      where: { docType: "BOLETA" },
+      update: { correlative: { increment: 1 } },
+      create: { docType: "BOLETA", series: "B001", correlative: 1 },
+    });
+    await prisma.invoice.create({
+      data: {
+        orderId: orderDelivered.id,
+        docType: "BOLETA",
+        series: counter.series,
+        correlative: counter.correlative,
+        buyerDocType: "DNI",
+        buyerDocNumber: "00000000",
+        buyerName: buyerUser.name,
+        provider: "mock",
+        status: "ISSUED",
+        pdfUrl: `http://localhost:3001/invoicing/mock/${orderDelivered.id}`,
+        externalId: `mock-${counter.series}-${counter.correlative}`,
+      },
+    });
+  }
+
   console.log("Seed completo.");
 }
 

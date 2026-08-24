@@ -11,6 +11,10 @@ export interface ApiUser {
   userId: string;
   email: string;
   role: "BUYER" | "VENDOR" | "DRIVER" | "ADMIN";
+  name?: string;
+  createdAt?: string;
+  vendor?: { storeName: string; isApproved: boolean } | null;
+  driver?: { phone: string; vehiclePlate: string; vehicleType: string; isAvailable: boolean } | null;
 }
 
 export interface ApiOrder {
@@ -27,6 +31,7 @@ export interface ApiOrder {
     user: { name: string };
   } | null;
   payment: { status: string; provider: string } | null;
+  invoice: { docType: "BOLETA" | "FACTURA"; series: string; correlative: number; status: string; pdfUrl: string | null } | null;
   items: {
     id: string;
     quantity: string;
@@ -39,6 +44,29 @@ export interface ApiDriverLocation {
   lat: number;
   lng: number;
   updatedAt: string;
+}
+
+export interface ApiDriver {
+  id: string;
+  phone: string;
+  vehiclePlate: string;
+  vehicleType: string;
+  isAvailable: boolean;
+}
+
+export interface ApiDriverOrder {
+  id: string;
+  status: "RECEIVED" | "PREPARING" | "ON_THE_WAY" | "DELIVERED";
+  total: string;
+  createdAt: string;
+  vendor: { storeName: string };
+  buyer: { name: string };
+  items: {
+    id: string;
+    quantity: string;
+    unitPrice: string;
+    product: { name: string; unit: ApiProduct["unit"] };
+  }[];
 }
 
 export interface ApiProduct {
@@ -112,8 +140,17 @@ export interface ApiAdminOrder {
   createdAt: string;
   buyer: { name: string; email: string };
   vendor: { storeName: string };
-  driver: { user: { name: string } } | null;
+  driver: { id: string; user: { name: string } } | null;
   payment: { status: string; provider: string } | null;
+}
+
+export interface ApiAdminDriver {
+  id: string;
+  phone: string;
+  vehiclePlate: string;
+  vehicleType: string;
+  isAvailable: boolean;
+  user: { name: string; email: string };
 }
 
 export interface ApiAdminUser {
